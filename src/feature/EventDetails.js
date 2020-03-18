@@ -1,7 +1,10 @@
 import React, {Component} from 'react';
 import {Alert, AsyncStorage, Image, SafeAreaView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {colors} from '../utils/Colors';
+import {config} from '../utils/Constants';
+import GestureRecognizer from 'react-native-swipe-gestures';
 
+let trackingData;
 export default class EventDetails extends Component {
 
     static navigationOptions = ({navigation}) => {
@@ -32,28 +35,49 @@ export default class EventDetails extends Component {
         const {item} = this.state;
         return (
             <SafeAreaView style={{flex: 1, flexDirection: 'column', margin: 5}}>
-                <View style={{flex: 1, flexDirection: 'column'}}>
-                    <Image
-                        source={{uri: item.imageUrl}}
-                        style={styles.listImage}
-                    />
-                    <View style={{flex: 1, flexDirection: 'column', margin: 5, padding: 5}}>
-                        {this.renderCustomTextInputLayout('Event Name', item.name)}
-                        {this.renderCustomTextInputLayout('Location', item.place)}
-                        {this.renderCustomTextInputLayout('Entry Type', item.freeEntry === 1 ? 'Free Entry' : 'Paid Entry')}
-                        {!this.state.from && <TouchableOpacity
-                            onPress={() => {
-                                // add it to the local storage
-                                this.updateStorage(item);
-                            }}
-                            style={styles.button}>
-                            <Text style={styles.buttonText}>Add To Tracking</Text>
-                        </TouchableOpacity>}
+                <GestureRecognizer
+                    onSwipeLeft={() => {
+                        this.getUserDataIfExist();
+                    }}
+                    config={config}
+                    style={{flex: 1, flexDirection: 'column'}}
+                >
+                    <View style={{flex: 1, flexDirection: 'column'}}>
+                        <Image
+                            source={{uri: item.imageUrl}}
+                            style={styles.listImage}
+                        />
+                        <View style={{flex: 1, flexDirection: 'column', margin: 5, padding: 5}}>
+                            {this.renderCustomTextInputLayout('Event Name', item.name)}
+                            {this.renderCustomTextInputLayout('Location', item.place)}
+                            {this.renderCustomTextInputLayout('Entry Type', item.freeEntry === 1 ? 'Free Entry' : 'Paid Entry')}
+                            {!this.state.from && <TouchableOpacity
+                                onPress={() => {
+                                    // add it to the local storage
+                                    this.updateStorage(item);
+                                }}
+                                style={styles.button}>
+                                <Text style={styles.buttonText}>Add To Tracking</Text>
+                            </TouchableOpacity>}
+                        </View>
                     </View>
-                </View>
-
+                </GestureRecognizer>
             </SafeAreaView>
         );
+    }
+
+    getUserDataIfExist() {
+        let userName = global.userName;
+        AsyncStorage.getItem(userName).then((data) => {
+            trackingData=data;
+            if(trackingData && trackingData!=="[]"){
+                this.props.navigation.navigate('EventTracking', {
+                    data: JSON.parse(trackingData)
+                });
+            }else{
+                alert("You don't have any events in tracking list");
+            }
+        });
     }
 
     updateStorage(selectedItem) {
